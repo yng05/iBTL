@@ -43,6 +43,21 @@ public class Dashboard extends JPanel{
     JRadioButton optionBraided = new JRadioButton("Braided");
     JRadioButton optionSmallMultiples = new JRadioButton("Small Multiples");
     
+    JRadioButton optionLA = new JRadioButton("Line/Area");
+    JRadioButton optionLB = new JRadioButton("Line/Braided");
+    JRadioButton optionLSC = new JRadioButton("Line/Stacked(Centered)");
+    JRadioButton optionLSB = new JRadioButton("Line/Stacked(Baseline)");
+    
+    JRadioButton optionAB = new JRadioButton("Area/Braided");
+    JRadioButton optionASC = new JRadioButton("Area/Stacked(Centered)");
+    JRadioButton optionASB = new JRadioButton("Area/Stacked(Baseline)");    
+
+    JRadioButton optionBSC = new JRadioButton("Braided/Stacked(Centered)");
+    JRadioButton optionBSB = new JRadioButton("Braided/Stacked(Baseline)");
+    
+    JRadioButton optionSCSB = new JRadioButton("Stacked(Centered)/Stacked(Baseline)");
+    
+    
     
     ButtonGroup groupType = new ButtonGroup();
     
@@ -65,6 +80,21 @@ public class Dashboard extends JPanel{
     	groupType.add(optionStackedB);
     	groupType.add(optionBraided);
     	groupType.add(optionSmallMultiples);
+    	
+    	groupType.add(optionLA);
+    	groupType.add(optionLB);    	
+    	groupType.add(optionLSC);
+    	groupType.add(optionLSB);
+    	
+    	groupType.add(optionAB);
+    	groupType.add(optionASC);
+    	groupType.add(optionASB);
+    	
+    	groupType.add(optionBSC);
+    	groupType.add(optionBSB);
+    	
+    	groupType.add(optionSCSB);
+    	
     	RadioButtonActionListener actionListener = new RadioButtonActionListener();
     	
     	optionLine.setSelected(true);
@@ -74,12 +104,42 @@ public class Dashboard extends JPanel{
     	optionStackedB.addActionListener(actionListener);
     	optionBraided.addActionListener(actionListener);
     	optionSmallMultiples.addActionListener(actionListener);
+    	
+    	optionLA.addActionListener(actionListener);
+    	optionLB.addActionListener(actionListener);    	
+    	optionLSC.addActionListener(actionListener);
+    	optionLSB.addActionListener(actionListener);
+    	
+    	optionAB.addActionListener(actionListener);
+    	optionASC.addActionListener(actionListener);
+    	optionASB.addActionListener(actionListener);
+    	
+    	optionBSC.addActionListener(actionListener);
+    	optionBSB.addActionListener(actionListener);
+    	
+    	optionSCSB.addActionListener(actionListener);   	
+    	
+    	
     	add(optionLine);
     	add(optionArea);
     	add(optionStackedC);
     	add(optionStackedB);
     	add(optionBraided);
     	add(optionSmallMultiples);
+    	
+    	add(optionLA);
+    	add(optionLB);
+    	add(optionLSC);
+    	add(optionLSB);
+    	
+    	add(optionAB);
+    	add(optionASC);
+    	add(optionASB);
+    	
+    	add(optionBSC);
+    	add(optionBSB);
+    	
+    	add(optionSCSB);
     	
     	btnReset.addActionListener(new ActionListener() {
     	    @Override
@@ -97,7 +157,7 @@ public class Dashboard extends JPanel{
     	    add(cBox);
     	}
     	
-	    
+	    prManager.addStyle("Line");
 	   
 	}
 	
@@ -146,21 +206,53 @@ public class Dashboard extends JPanel{
 	    @Override
 	    public void actionPerformed(ActionEvent event) {
 	        JRadioButton button = (JRadioButton) event.getSource();
-	 
+	        prManager.resetStyle();
 	        if (button == optionLine) {	 
-	            prManager.setStyle("Line");
+	            prManager.addStyle("Line");
 	        } else if (button == optionArea) {
-	            prManager.setStyle("Area");     
+	            prManager.addStyle("Area");     
 	        }  else if (button == optionStackedB) {
-	            prManager.setStyle("Stacked(Baseline)");    
+	            prManager.addStyle("Stacked(Baseline)");    
 	        } else if (button == optionStackedC) {
-	            prManager.setStyle("Stacked(Centered)");    
+	            prManager.addStyle("Stacked(Centered)");    
 	        } else if (button == optionBraided) {
-	            prManager.setStyle("Braided");     
+	            prManager.addStyle("Braided");     
 	        }  else if (button == optionSmallMultiples) {
-	            prManager.setStyle("Small Multiples");    
-	        } 
-	        
+	            prManager.addStyle("Small Multiples");    
+	        }   else if (button == optionLA) {
+	            prManager.addStyle("Line");  
+	            prManager.addStyle("Area");   
+	        }else if (button == optionLB) {
+	            prManager.addStyle("Line");  
+	            prManager.addStyle("Braided");   
+	        }else if (button == optionLSB) {
+	            prManager.addStyle("Line");  
+	            prManager.addStyle("Stacked(Baseline)");    
+	        }  
+	        else if (button == optionLSC) {
+	            prManager.addStyle("Line");  
+	            prManager.addStyle("Stacked(Centered)");    
+	        }else if (button == optionAB) {
+	            prManager.addStyle("Area");  
+	            prManager.addStyle("Braided");   
+	        }else if (button == optionASB) {
+	            prManager.addStyle("Area");  
+	            prManager.addStyle("Stacked(Baseline)");    
+	        }  
+	        else if (button == optionASC) {
+	            prManager.addStyle("Area");  
+	            prManager.addStyle("Stacked(Centered)");    
+	        }else if (button == optionBSB) {
+	            prManager.addStyle("Braided");  
+	            prManager.addStyle("Stacked(Baseline)");   
+	        }else if (button == optionBSC) {
+	            prManager.addStyle("Braided");  
+	            prManager.addStyle("Stacked(Centered)");    
+	        }  
+	        else if (button == optionSCSB) {
+	            prManager.addStyle("Stacked(Centered)");  
+	            prManager.addStyle("Stacked(Baseline)");    
+	        }  
 	        canvas.flushSelected();
 	        canvas.repaint();
 	    }

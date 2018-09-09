@@ -1,5 +1,6 @@
 package drawing.tools;
 
+import java.awt.Toolkit;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
@@ -7,7 +8,9 @@ public class PositionManager {
     private ArrayList<Line2D> lines = new ArrayList<Line2D>();
     private ArrayList<String> years = new ArrayList<String>();
     private ArrayList<ArrayList<Line2D>> monthsOfYears = new ArrayList<ArrayList<Line2D>>();
+    private ArrayList<ArrayList<Line2D>> daysOfMonths = new ArrayList<ArrayList<Line2D>>();
     private int markedLine = -1;
+    private boolean isInMagnifierView = false;
 
 	private double fullGap = 200D;
     
@@ -22,8 +25,15 @@ public class PositionManager {
 	public ArrayList<Line2D> getMonthLines(int ordinal) {
 		return monthsOfYears.get(ordinal);
 	}
-
 	
+	public ArrayList<ArrayList<Line2D>> getDaysOfMonths() {
+		return daysOfMonths;
+	}
+
+	public void setDaysOfMonths(ArrayList<ArrayList<Line2D>> daysOfMonths) {
+		this.daysOfMonths = daysOfMonths;
+	}
+
 	public void addLine(Line2D line, String year) {
 		lines.add(line);
 		years.add(year);
@@ -38,11 +48,34 @@ public class PositionManager {
 			double gap = (xend - xstart) / 12;
 			
 			ArrayList<Line2D> monthlines = new ArrayList<Line2D>();
-			for(int i = 1; i<12;i ++) {
-				monthlines.add(new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom));
+			ArrayList<Line2D> daylines = new ArrayList<Line2D>();
+			for(int i = 1; i<=12;i ++) {
+				Line2D monthline = new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom);
+				monthlines.add(monthline);
+				int days = 30;
+				if(i == 1 || i == 3 || i == 5 || i == 7 || i == 8 || i == 10 || i==12) {
+					days = 31;
+				}else if(i == 2) {
+					int yearInt = Integer.parseInt(year);					
+					if(yearInt%4 == 0) {
+						days = 29;
+					}else {
+						days = 28;
+					}
+				}
+				
+				double xmstart = monthline.getX1() - gap;
+				double daygap = gap/days;
+				for(int j = 1; j<days; j++) {
+					if(j%5 == 0) {
+						Line2D dayline = new Line2D.Double(xmstart + j*daygap, ytop, xmstart + (j*daygap), ybottom);
+						daylines.add(dayline);	
+					}
+				}
 			}
 			
 			monthsOfYears.add(monthlines);
+			daysOfMonths.add(daylines);
 		}
 	}
     
@@ -124,11 +157,36 @@ public class PositionManager {
 			double gap = (xend - xstart) / 12;
 			
 			ArrayList<Line2D> monthlines = new ArrayList<Line2D>();
-			for(int i = 1; i<12;i ++) {
-				monthlines.add(new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom));
+			ArrayList<Line2D> daylines = new ArrayList<Line2D>();
+			for(int i = 1; i<=12;i ++) {
+				Line2D monthline = new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom);
+				monthlines.add(monthline);
+				
+				int days = 30;
+				if(i == 1 || i == 3 || i == 5 || i == 7 || i == 8 || i == 10 || i==12) {
+					days = 31;
+				}else if(i == 2) {
+					int year = Integer.valueOf(years.get(markedLine));					
+					if(year%4 == 0) {
+						days = 29;
+					}else {
+						days = 28;
+					}
+				}
+				
+				double xmstart = monthline.getX1() - gap;
+				double daygap = gap/days;
+				
+				for(int j = 1; j<days; j++) {
+					if(j%5 == 0) {
+						Line2D dayline = new Line2D.Double(xmstart + j*daygap, ytop, xmstart + (j*daygap), ybottom);
+						daylines.add(dayline);	
+					}			
+				}
 			}
 			
 			monthsOfYears.set(before, monthlines);
+			daysOfMonths.set(before, daylines);
     	}
     	
     	if(after != -1) {
@@ -140,15 +198,65 @@ public class PositionManager {
 			double gap = (xend - xstart) / 12;
 			
 			ArrayList<Line2D> monthlines = new ArrayList<Line2D>();
-			for(int i = 1; i<12;i ++) {
-				monthlines.add(new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom));
+			ArrayList<Line2D> daylines = new ArrayList<Line2D>();
+			for(int i = 1; i<=12;i ++) {
+				Line2D monthline = new Line2D.Double(xstart + (i*gap), ytop, xstart + (i*gap), ybottom);
+				monthlines.add(monthline);
+				int days = 30;
+				if(i == 1 || i == 3 || i == 5 || i == 7 || i == 8 || i == 10 || i==12) {
+					days = 31;
+				}else if(i == 2) {
+					int year = Integer.valueOf(years.get(markedLine));					
+					if(year%4 == 0) {
+						days = 29;
+					}else {
+						days = 28;
+					}
+				}
+				
+				double xmstart = monthline.getX1() - gap;
+				double daygap = gap/days;
+				
+				for(int j = 1; j<days; j++) {
+					if(j%5 == 0) {
+						Line2D dayline = new Line2D.Double(xmstart + j*daygap, ytop, xmstart + (j*daygap), ybottom);
+						daylines.add(dayline);	
+					}			
+				}
 			}
 			
 			monthsOfYears.set(markedLine, monthlines);
+			daysOfMonths.set(markedLine, daylines);
     	}
     }
     
-    public void reset() {
+    public void magnifierView() {    		
+		if(isInMagnifierView) {
+			return;
+		}
+    	for(int l = 0; l < lines.size(); l++){
+    		Double xPos = lines.get(l).getX1();
+    		Double centerXPos = Toolkit.getDefaultToolkit().getScreenSize().getWidth()/2;
+    		Double newX = 0D;
+
+    		newX = xPos + 3*(xPos - centerXPos);
+    		lines.get(l).setLine(new Line2D.Double(newX, lines.get(l).getY1(), newX, lines.get(l).getY2()));   
+    		
+    		rectificateTheMonthLines(l);
+    	}
+    }
+    
+    
+    
+    public boolean isInMagnifierView() {
+		return isInMagnifierView;
+	}
+
+	public void setInMagnifierView(boolean isInMagnifierView) {
+		this.isInMagnifierView = isInMagnifierView;
+	}
+
+	public void reset() {
 
     }
 }

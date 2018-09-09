@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 public class DataManager {
 	private String path;
@@ -13,9 +15,10 @@ public class DataManager {
 
 	private ArrayList<Column> columns = new ArrayList<>();
 	private ArrayList<String> dates = new ArrayList<>();
+	private ArrayList<String> years = new ArrayList<>();
 
-	private Double min;
-	private Double max;
+	private Double min = 0.0;
+	private Double max = 0.0;
 
 	
 	
@@ -32,10 +35,55 @@ public class DataManager {
 		init();
 	}
 	
+	public ArrayList<Data> getYearData(int col, int year){
+		ArrayList<Data> yearData = new ArrayList<>();
+		for(int d = 0; d < columns.get(col).getData().size(); d++) {
+			if(year == columns.get(col).getData().get(d).getYear()) {
+				Data data = new Data(columns.get(col).getData().get(d).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				int offset = 0;
+				while(data.getData() == 0D && d - offset > 0) {
+					offset++;
+					data = new Data(columns.get(col).getData().get(d - offset).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				}
+				yearData.add(data);
+			}
+			if(year +1 == columns.get(col).getData().get(d).getYear()){
+				Data data = new Data(columns.get(col).getData().get(d).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				yearData.add(data);
+				break;
+			}
+		}
+		
+		return yearData;
+	}
+	
+	public ArrayList<Data> getNegativeYearData(int col, int year){		
+		ArrayList<Data> yearData = new ArrayList<>();
+		for(int d = 0; d < columns.get(col).getData().size(); d++) {
+			if(year == columns.get(col).getData().get(d).getYear()) {
+				Data data = new Data((-1) * columns.get(col).getData().get(d).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				int offset = 0;
+				while(data.getData() == 0D && d - offset > 0) {
+					offset++;
+					data = new Data((-1) * columns.get(col).getData().get(d - offset).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				}
+				yearData.add(data);
+			}
+			if(year +1 == columns.get(col).getData().get(d).getYear()){
+				Data data = new Data((-1) * columns.get(col).getData().get(d).data, columns.get(col).getData().get(d).year, columns.get(col).getData().get(d).month, columns.get(col).getData().get(d).day);
+				yearData.add(data);
+				break;
+			}
+		}
+		
+		return yearData;
+	}
+	
 	public void init() {
 		BufferedReader br = null;
         String line = "";
         String cvsSplitBy = ";";
+        String year = "";
 
         try {
 
@@ -46,48 +94,55 @@ public class DataManager {
             while ((line = br.readLine()) != null) {
             	line = line.replace("?", "");
             	line = line.replace("\"", "");
-                String[] parts = line.split(cvsSplitBy);                
+                String[] parts = line.split(cvsSplitBy);          
+                if(parts.length < 20) {
+                	String[] newParts = new String[20];
+                	for(int p = 0; p < parts.length; p++) {
+                		newParts[p] = parts[p];
+                	}
+                	for(int np = parts.length; np < 20; np++) {
+                		newParts[np] = "0";
+                	}
+                	
+                	parts = newParts;
+                }
+                
                 rows.add(parts);
             }
+            for(int d = 1; d < rows.get(0).length; d++) {
+    			columns.add(new Column(rows.get(0)[d]));
+    		}
+            rows.remove(0);
+            Collections.reverse(rows);
             
             for(int r = 0; r < rows.size(); r++) {
-            	if(r == 0) {
-            		for(int d = 1; d < rows.get(0).length; d++) {
-            			columns.add(new Column(rows.get(0)[d]));
-            		}
-            	}else {
-            		dates.add(rows.get(r)[0]);
-            		for(int d = 1; d < rows.get(r).length; d++) {
-            			String rec = rows.get(r)[d];
-            			Double value;
-        				if(rec == null || rec.isEmpty() || rec.equals("") || rec.equals("-")) {
-        					value = 0.0;
-        				}else {
-            				value = Double.parseDouble(rec);        					
-        				}
-        				
-        				
-        				if(max == null) {
-        					max = value;
-        				}
-        				if(min == null) {
-        					min = value;
-        				}
-        				
-        				if(value < min) {
-        					min = value;
-        				}
-        				
-        				if(value > max) {
-        					max = value;
-        				}
-        				
-            			columns.get(d - 1).addData(value);
-            		}
-            	}         	
-            
+        		String dateStamp[] = rows.get(r)[0].split("-");
+        		
+        		if(!year.equals(dateStamp[0])) {
+        			year = dateStamp[0];
+        			years.add(year);
+        		}
+        		
+        		for(int v = 1; v < rows.get(0).length; v++) {
+        			String dat = rows.get(r)[v];
+        			Double val = 0.0;
+        			if(!dat.equals("")) {
+        				val = Double.parseDouble(dat);
+        			}       			
+        			
+        			Data data = new Data(val, Integer.valueOf(dateStamp[0]), Integer.valueOf(dateStamp[1]), Integer.valueOf(dateStamp[2]));
+        			columns.get(v-1).addData(data);
+        			
+        			if(val < min) {
+        				min = val;
+        			}
+        			
+        			if(val > max) {
+        				max = val;
+        			}
+        		}           
             }
-            
+
             return;
 
         } catch (FileNotFoundException e) {
@@ -122,13 +177,6 @@ public class DataManager {
 	}
 	
 	public ArrayList<String> getYears(){
-		ArrayList<String> years = new ArrayList<>();
-		for(int i = 0;i < dates.size(); i+=12) {
-			String[] parts = dates.get(i).split("-");
-			if(!parts[0].isEmpty()){
-				years.add(parts[0]);				
-			}
-		}
 		return years;
 	}
 	
@@ -143,7 +191,7 @@ public class DataManager {
 	
 	public class Column{	
 		String name;
-		ArrayList<Double> data = new ArrayList<>();
+		ArrayList<Data> data = new ArrayList<>();
 		boolean active = true;
 		Color color;
 		
@@ -157,12 +205,10 @@ public class DataManager {
 		public void setName(String name) {
 			this.name = name;
 		}
-		public Double[] getData() {
-			Double[] returnArray = new Double[data.size()];
-			returnArray = data.toArray(returnArray);
-			return returnArray;
+		public ArrayList<Data> getData() {
+			return data;
 		}
-		public void addData(Double data) {
+		public void addData(Data data) {
 			this.data.add(data);
 		}
 		public boolean isActive() {
@@ -180,6 +226,48 @@ public class DataManager {
 			this.color = color;
 		}
 		
+	}
+	
+	public class Data{
+		private Double data;
+		private Integer year;
+		private Integer month;
+		private Integer day;
+		
+		public Double getData() {
+			return data;
+		}		
+
+		public void increaseData(Double data) {
+			this.data += data;
+		}
+		
+		public void decreaseData(Double data) {
+			this.data -= data;
+		}
+		
+		public void setData(Double data) {
+			this.data = data;
+		}
+
+		public Integer getYear() {
+			return year;
+		}
+
+		public Integer getMonth() {
+			return month;
+		}
+		
+		public Integer getDay() {
+			return day;
+		}
+
+		public Data(Double data, Integer year, Integer month, Integer day) {
+			this.data = data;
+			this.year = year;
+			this.month = month;
+			this.day = day;
+		}
 	}
 
 	

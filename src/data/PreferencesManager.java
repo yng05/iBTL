@@ -1,13 +1,18 @@
 package data;
 
+import java.util.ArrayList;
+
 public class PreferencesManager {
 	private boolean accordion = false;
-	private double offsetLeft = 0D;
-	private double offsetTop = 0D;
+	private double offsetNormalLeft = 0D;
+	private double offsetNormalTop = 0D;
+	private double offsetZoomLeft = 0D;
+	private double offsetZoomTop = 0D;
 	private double zoom = 1;
 	private int deactivatedItems = 0;
 	
-	private String style = "Line";
+	
+	private ArrayList<String> styles = new ArrayList<>();
 
 	public boolean isAccordion() {
 		return accordion;
@@ -18,19 +23,45 @@ public class PreferencesManager {
 	}
 
 	public double getOffsetLeft() {
-		return offsetLeft;
+		return offsetNormalLeft + offsetZoomLeft;
 	}
 
-	public void setOffsetLeft(double offsetLeft) {
-		this.offsetLeft = offsetLeft;
-	}
 
 	public double getOffsetTop() {
-		return offsetTop;
+		return offsetNormalTop + offsetZoomTop;
+	}
+	
+
+	public double getOffsetNormalLeft() {
+		return offsetNormalLeft;
 	}
 
-	public void setOffsetTop(double offsetTop) {
-		this.offsetTop = offsetTop;
+	public void setOffsetNormalLeft(double offsetNormalLeft) {
+		this.offsetNormalLeft = offsetNormalLeft;
+	}
+
+	public double getOffsetNormalTop() {
+		return offsetNormalTop;
+	}
+
+	public void setOffsetNormalTop(double offsetNormalTop) {
+		this.offsetNormalTop = offsetNormalTop;
+	}
+
+	public double getOffsetZoomLeft() {
+		return offsetZoomLeft;
+	}
+
+	public void setOffsetZoomLeft(double offsetZoomLeft) {
+		this.offsetZoomLeft = offsetZoomLeft;
+	}
+
+	public double getOffsetZoomTop() {
+		return offsetZoomTop;
+	}
+
+	public void setOffsetZoomTop(double offsetZoomTop) {
+		this.offsetZoomTop = offsetZoomTop;
 	}
 
 	public double getZoom() {
@@ -43,13 +74,17 @@ public class PreferencesManager {
 		}
 	}
 
-	public String getStyle() {
-		return style;
+	public ArrayList<String> getStyle() {
+		return styles;
 	}
 
-	public void setStyle(String style) {
-		this.style = style;
+	public void addStyle(String style) {
+		this.styles.add(style);
 	}
+	
+	public void resetStyle() {
+		this.styles.clear();
+	};
 	
 	public int getDeactivatedItems() {
 		return deactivatedItems;

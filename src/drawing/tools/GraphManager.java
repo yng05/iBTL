@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import data.DataManager.Data;
+
 public class GraphManager {
 	private PositionManager pManager;
 	private Double max, min;
@@ -29,7 +31,13 @@ public class GraphManager {
 		step = lineLength / range;
 	}
 	
-	public GeneralPath createStraightField(int year, Double[] values) {
+	public GeneralPath createStraightField(int year, ArrayList<Data> data, boolean isSecond, int ratio) {
+		Double offset = 0D;
+		if(isSecond) {
+			offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 2;
+		}
+		double step = this.step / ratio;
+		
 		if(year + 1 == pManager.getLines().size()) {
 			return null;
 		}
@@ -38,26 +46,44 @@ public class GraphManager {
 		
 		GeneralPath gp = new GeneralPath();
 		monthsOfYears = pManager.getMonthLines(year);
+				
 		
-		gp.moveTo((float)firstBorder.getX1(), firstBorder.getY2() - step * values[0]);
-		for(int i = 1; i < monthsOfYears.size(); i++) {
-			Line2D border = monthsOfYears.get(i);
-			gp.lineTo((float)border.getX1(), border.getY2() - step * values[i+1]);
+		
+		for(int i = 0; i < data.size() - 1; i++) {
+			int datayear = data.get(i).getYear();
+			int month = data.get(i).getMonth();
+			int day = data.get(i).getDay();
+			Double dayGap = (secondBorder.getX1() - firstBorder.getX1()) / (12*31);
+			Double value = data.get(i).getData();
+			Line2D border = null;
+			
+			if(month == 1) {
+				border = firstBorder;
+			}else {
+				border = monthsOfYears.get(month - 2);
+			}
+			
+			if(i == 0) {
+				gp.moveTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);
+			}else {
+				if(value != 0) {					
+					gp.lineTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);						
+				}			
+			}
 		}
-		
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * values[values.length - 1]);
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2());
-
-		gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2());
+		Double value = data.get(data.size()-1).getData();
+		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * value - offset);
+		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - offset);
+		gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2() - offset);
 		
 		gp.closePath();
 		
-		//graphs.add(getPoints(gp));
+		graphs.add(getPoints(gp));
 		
 		return gp;
 	}
 	
-	public GeneralPath createSmallMultiples(int year, Double[] values, int columns, int col) {
+	public GeneralPath createSmallMultiples(int year, ArrayList<Data> data, int columns, int col) {
 		double SSStep = (double) (step/columns);
 		double bottomBuffer = (double)(col * (lineLength/columns));
 		if(year + 1 == pManager.getLines().size()) {
@@ -69,13 +95,30 @@ public class GraphManager {
 		GeneralPath gp = new GeneralPath();
 		monthsOfYears = pManager.getMonthLines(year);
 		
-		gp.moveTo((float)firstBorder.getX1(), firstBorder.getY2() - bottomBuffer - SSStep * values[0]);
-		for(int i = 1; i < monthsOfYears.size(); i++) {
-			Line2D border = monthsOfYears.get(i);
-			gp.lineTo((float)border.getX1(), border.getY2() - bottomBuffer - SSStep * values[i+1]);
+		for(int i = 0; i < data.size() - 1; i++) {
+			int month = data.get(i).getMonth();
+			int day = data.get(i).getDay();
+			Double dayGap = (secondBorder.getX1() - firstBorder.getX1()) / (12*31);
+			Double value = data.get(i).getData();
+			Line2D border = null;
+			
+			if(month == 1) {
+				border = firstBorder;
+			}else {
+				border = monthsOfYears.get(month - 2);
+			}
+			
+			if(i == 0) {
+				gp.moveTo((float)firstBorder.getX1(), firstBorder.getY2() - bottomBuffer - SSStep * value);
+			}else {
+				if(value != 0) {
+					gp.lineTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - bottomBuffer - SSStep * value);	
+				}			
+			}
 		}
 		
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - bottomBuffer - SSStep * values[values.length - 1]);
+		Double value = data.get(data.size()-1).getData();
+		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - SSStep * value - bottomBuffer);
 		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - bottomBuffer);
 
 		gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2() - bottomBuffer);
@@ -86,7 +129,13 @@ public class GraphManager {
 	}
 	
 	
-	public GeneralPath createSimpleLineGraph(int year, Double[] values) {
+	public GeneralPath createSimpleLineGraph(int year, ArrayList<Data> data, boolean isSecond, int ratio) {		
+		Double offset = 0D;
+		if(isSecond) {
+			offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 2;
+		}
+		double step = this.step / ratio;
+		
 		if(year + 1 == pManager.getLines().size()) {
 			return null;
 		}
@@ -95,24 +144,51 @@ public class GraphManager {
 		
 		GeneralPath gp = new GeneralPath();
 		monthsOfYears = pManager.getMonthLines(year);
+				
 		
-		gp.moveTo((float)firstBorder.getX1(), firstBorder.getY2() - step * values[0]);
-		for(int i = 1; i < monthsOfYears.size(); i++) {
-			Line2D border = monthsOfYears.get(i);
-			gp.lineTo((float)border.getX1(), border.getY2() - step * values[i+1]);
+		
+		for(int i = 0; i < data.size()-1; i++) {
+			int month = data.get(i).getMonth();
+			int day = data.get(i).getDay();
+			Double dayGap = (secondBorder.getX1() - firstBorder.getX1()) / (12*31);
+			Double value = data.get(i).getData();
+			Line2D border = null;
+			
+			if(month == 1) {
+				border = firstBorder;
+			}else {
+				border = monthsOfYears.get(month - 2);
+			}
+			
+			if(i == 0) {
+				gp.moveTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);
+			}else {
+				if(value != 0) {
+					gp.lineTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);	
+				}			
+			}
 		}
-		
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * values[values.length - 1]);
-		
-		
+		Double value = data.get(data.size()-1).getData();
+		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * value - offset);
+
 		return gp;
 	}
 	
-	public GeneralPath createStreamGraph(int year, Double[] values, Double[] prevVals, double ratio, boolean isCentered) {
+	public GeneralPath createStreamGraph(int year, ArrayList<Data> data, ArrayList<Data> dataPrev, double ratio, boolean isCentered, boolean isSecond) {
 		double offset = 0D;
+		
 		if(isCentered) {
-			offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 2;
+			if(isSecond) {
+				offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 4 * 3;
+			}else {
+				offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 2;
+			}
+		}else {
+			if(isSecond) {
+				offset = (pManager.getLines().get(0).getY2() - pManager.getLines().get(0).getY1()) / 2;
+			}
 		}
+		
 		double step = this.step / ratio;
 		if(year + 1 == pManager.getLines().size()) {
 			return null;
@@ -123,27 +199,63 @@ public class GraphManager {
 		GeneralPath gp = new GeneralPath();
 		monthsOfYears = pManager.getMonthLines(year);
 		
-		gp.moveTo((float)firstBorder.getX1(), firstBorder.getY2() - step * values[0] - offset);
-		for(int i = 1; i < monthsOfYears.size(); i++) {
-			Line2D border = monthsOfYears.get(i);
-			gp.lineTo((float)border.getX1(), border.getY2() - step * values[i+1] - offset);
+		for(int i = 0; i < data.size() - 1; i++) {
+			int month = data.get(i).getMonth();
+			int day = data.get(i).getDay();
+			Double dayGap = (secondBorder.getX1() - firstBorder.getX1()) / (12*31);
+			Double value = 0.0;
+			if(data.get(i).getData() != 0.0) {
+				value = data.get(i).getData();
+			}
+			Line2D border = null;
+			
+			if(month == 1) {
+				border = firstBorder;
+			}else {
+				border = monthsOfYears.get(month - 2);
+			}
+			
+			if(i == 0) {
+				gp.moveTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);
+			}else {
+				gp.lineTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);
+			}
 		}
-
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * values[values.length - 1] - offset);
-		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * prevVals[prevVals.length - 1] - offset);
+		Double val = data.get(data.size()-1).getData();
+		gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * val - offset);
 		
-		for(int i = monthsOfYears.size() -1; i > 0 ; i--) {
-			Line2D border = monthsOfYears.get(i);
-			gp.lineTo((float)border.getX1(), border.getY2() - step * prevVals[i + 1] - offset);
+		if(dataPrev != null) {
+			Double valPrev = dataPrev.get(dataPrev.size()-1).getData();
+			gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2() - step * valPrev - offset);
+			for(int i = dataPrev.size() - 2; i > 0; i--) {
+				int month = dataPrev.get(i).getMonth();
+				int day = dataPrev.get(i).getDay();
+				Double dayGap = (secondBorder.getX1() - firstBorder.getX1()) / (12*31);
+				Double value = dataPrev.get(i).getData();
+				Line2D border = null;
+				
+				if(month == 1) {
+					border = firstBorder;
+				}else {
+					border = monthsOfYears.get(month - 2);
+				}
+				
+				if(i == 0) {
+					gp.moveTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);
+				}else {
+					gp.lineTo((float)border.getX1() + (day -1) * dayGap, border.getY2() - step * value - offset);							
+				}
+			}
+			Double valLast = dataPrev.get(0).getData();
+			gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2() - step * valLast - offset);
+			gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2()- offset);
+		}else {
+			gp.lineTo((float)secondBorder.getX1(), secondBorder.getY2()- offset);
+			gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2()- offset);
 		}
-
-		gp.lineTo((float)firstBorder.getX1(), firstBorder.getY2() - step * prevVals[0] - offset);
-		gp.lineTo((float)firstBorder.getX1(), firstBorder.getY1());
+		
 		
 		gp.closePath();
-		
-		//graphs.add(getPoints(gp));
-		
 		return gp;
 	}
 	

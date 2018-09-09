@@ -17,7 +17,7 @@ public class Window extends JFrame {
    private DrawingCanvas canvas;
    private Dashboard dashboard;
    private PositionManager pManager = new PositionManager();
-   private DataManager dManager = new DataManager("hicp-2015-100--monthly-data-annu (5).csv");
+   private DataManager dManager = new DataManager("finaldata.csv");
    private PreferencesManager prManager = new PreferencesManager();
    private int xFirst = -1;
    private int yFirst = -1;
@@ -41,14 +41,31 @@ public class Window extends JFrame {
       canvas.addMouseListener(new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent evt) {
-        	  try {
-  				Robot r = new Robot();
-  				canvas.pickColumn(r.getPixelColor(evt.getX(), evt.getY() + TOP_BUFFER));
+        	  if(evt.getClickCount() == 1) {
+            	  try {
+        				Robot r = new Robot();
+        				canvas.pickColumn(r.getPixelColor(evt.getX(), evt.getY() + TOP_BUFFER));
 
-	  			} catch (AWTException e) {
-	  				
-	  				e.printStackTrace();
-	  			}      	  
+      	  			} catch (AWTException e) {
+      	  				
+      	  				e.printStackTrace();
+      	  			}          		  
+        	  }if(evt.getClickCount() == 2) {
+        		  Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        		  Double xCenter = screenSize.getWidth() / 2;
+        		  Double yCenter = (screenSize.getHeight() - 400D) / 2;
+        		  
+        		  Double xClicked = (double)evt.getX();
+        		  Double yClicked = (double)evt.getY();
+        		  
+        		  Double xDiff = xCenter - xClicked;
+        		  Double yDiff = yCenter - yClicked;
+        		  
+        		  Double zoomDiff = 3.0D - prManager.getZoom();
+        		  
+        		  canvas.magnifier(xDiff, yDiff);
+        		 
+        	  }    	  
           }
           @Override
           public void mousePressed(MouseEvent evt) {
@@ -74,17 +91,20 @@ public class Window extends JFrame {
         	int yDest = evt.getY();
         	if(xFirst > -1) {
         		int xDiff = xDest - xFirst;
-        		prManager.setOffsetLeft(prManager.getOffsetLeft() + xDiff);        			
+        		prManager.setOffsetNormalLeft(prManager.getOffsetNormalLeft() + xDiff);        			
         		        		
         		xFirst = xDest;
         	}
+        	
+        															
         	if(yFirst > -1) {
         		int yDiff = yDest - yFirst;
-        		prManager.setOffsetTop(prManager.getOffsetTop() + yDiff);
+        		prManager.setOffsetNormalTop(prManager.getOffsetNormalTop() + yDiff);
         		yFirst = yDest;        		
         	}
+        	
         	if(xFirst == -1 && yFirst == -1){
-        		pManager.moveTheLine(xDest / prManager.getZoom(), prManager.getOffsetLeft() / prManager.getZoom(),prManager.isAccordion());
+        		pManager.moveTheLine(xDest / prManager.getZoom(), prManager.getOffsetNormalLeft() / prManager.getZoom(),prManager.isAccordion());
             }
         	canvas.flushPaths();
 
@@ -111,34 +131,33 @@ public class Window extends JFrame {
 			if(arg0.getWheelRotation() == -1) {
 				if(prManager.getZoom() + 0.1 > 3) {
 					return;
-				}
-				prManager.setZoom(prManager.getZoom() + 0.1);
-				Double zoom = prManager.getZoom();
-				int scW = canvas.getWidth();
-				int scH = canvas.getHeight();
-				Double offL = prManager.getOffsetLeft();
-				Double offT = prManager.getOffsetTop();
-				offL -= (zoom*scW - (zoom - 0.1)*scW)/2;
-				offT -= (zoom*scH - (zoom - 0.1)*scH)/2;
-				prManager.setOffsetLeft(offL);
-				prManager.setOffsetTop(offT);
-				repaint();
+				}				
 			}else if (arg0.getWheelRotation() == 1) {
 				if(prManager.getZoom() - 0.1 == 0.9) {
 					return;
-				}
-				prManager.setZoom(prManager.getZoom() - 0.1);
-				Double zoom = prManager.getZoom();
-				int scW = canvas.getWidth();
-				int scH = canvas.getHeight();
-				Double offL = prManager.getOffsetLeft();
-				Double offT = prManager.getOffsetTop();
-				offL -= (zoom*scW - (zoom + 0.1)*scW)/2;
-				offT -= (zoom*scH - (zoom + 0.1)*scH)/2;
-				prManager.setOffsetLeft(offL);
-				prManager.setOffsetTop(offT);
-				repaint();
+				}				
+			}	
+			
+			prManager.setZoom(prManager.getZoom() + (0.1 * arg0.getWheelRotation() * -1));
+			Double zoom = prManager.getZoom();
+			int scW = canvas.getWidth();
+			int scH = canvas.getHeight();
+			Double offL = 0D;
+			if(prManager.getOffsetNormalLeft() > 0) {
+				 offL = -scW * (zoom - 1.0) / ((scW) / (scW/2 - prManager.getOffsetNormalLeft()));
+			}else {
+				offL = -scW * (zoom - 1.0) / ((scW) / (scW/2 - (prManager.getOffsetNormalLeft()) + -1));
 			}
+			Double offT = 0D;
+			if(prManager.getOffsetNormalLeft() > 0) {
+				offT = -scH * (zoom - 1.0) / ((scH) / (scH/2 - prManager.getOffsetNormalTop()));
+			}else {
+				offT = -scH * (zoom - 1.0) / ((scH) / (scH/2 - (prManager.getOffsetNormalTop()) + -1));
+			}
+			
+			prManager.setOffsetZoomLeft(offL);
+			prManager.setOffsetZoomTop(offT);
+			repaint();
 		}
           
        });

@@ -7,6 +7,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
@@ -20,9 +22,11 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JPanel;
+import javax.swing.Timer;
 
 import data.DataManager;
 import data.DataManager.Column;
+import data.DataManager.Data;
 import data.PreferencesManager;
 
 public class DrawingCanvas extends JPanel {
@@ -46,6 +50,7 @@ public class DrawingCanvas extends JPanel {
     int infoPanelY = Integer.MIN_VALUE;
     String text = "";
     SelectedColumn selectedCol;
+    SelectedColumn selectedColSecond;
     
     public GraphManager getgManager() {
 		return gManager;
@@ -56,8 +61,6 @@ public class DrawingCanvas extends JPanel {
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		canvasW = screenSize.getWidth();
 		canvasH = screenSize.getHeight() - 400D;
-//		canvasW = 1920D;
-//		canvasH = 1080D - 400D;
 		BOTTOM_LINE_END = (Double)canvasH - 50D;
     	setPreferredSize(new Dimension((int)Math.round(canvasW), (int)Math.round(canvasH)));
     	
@@ -83,8 +86,7 @@ public class DrawingCanvas extends JPanel {
 	private void doDrawing(Graphics g) {
 	    AffineTransform coordTransform = new AffineTransform();
 		Graphics2D g2D = (Graphics2D) g;
-        //Graphics2D g2d = (Graphics2D) g;
-        setBackground(CANVAS_BACKGROUND);  // set background color for this JPanel
+        setBackground(CANVAS_BACKGROUND); 
         g2D.setColor(LINE_COLOR);
         coordTransform.translate(prManager.getOffsetLeft(), prManager.getOffsetTop());
         coordTransform.scale(prManager.getZoom(), prManager.getZoom());
@@ -101,254 +103,279 @@ public class DrawingCanvas extends JPanel {
        	
     	g2D.setRenderingHint(
     		    RenderingHints.KEY_TEXT_ANTIALIASING,
-    		    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+    		    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);	
+    	
+    	ArrayList<Column> columns = dManager.getColumns();
         
-        for(int l = 0; l<lines.size();l++) {         
-	        if(prManager.getStyle().equals("Line") || prManager.getStyle().equals("Area") || prManager.getStyle().equals("Small Multiples")) {			        	
-	        	ArrayList<Column> columns = dManager.getColumns();
-	        	for(int c = 0; c < columns.size() -1; c++) {
-	        		Double[] values = new Double[13];
-	        		for(int m = 0; m < 12; m++) {
-	        			int pos = l*12 + m;
-	        			Double value = columns.get(c).getData()[pos]; 
-	
-	            		if(value == null) {
-	            			values[m] = 0D;
-	            		}else {
-	            			values[m] = value; 
-	            		}
-	        		}
-	        		int posFirstOfNext = (l+1)*12;
-	        		Double valNext = null;
-	        		if(posFirstOfNext < dManager.getDates().size()) {
-	        			valNext = columns.get(c).getData()[posFirstOfNext];
-	        		}
-	        		
-	        		if(valNext == null) {
-	        			values[12] = 0D;
-	        		}else {
-	        			values[12] = valNext; 
-	        		}
-	        		
-	        		g2D.setColor(colors[c]);
-	        		g2D.setStroke(new BasicStroke(3));
-	        		
-	        		if(prManager.getStyle().equals("Line")) {
-	        			if(!columns.get(c).isActive()) {
-	        				continue;
-	        			}	        
-	        			GeneralPath path = gManager.createSimpleLineGraph(l, values);
-	        			if(path != null) {
-		        			g2D.draw(path);		        				
-	        			}
-	        			addPathToSelected("Draw", path, c);
-	        		}else if(prManager.getStyle().equals("Area")) {
-	        			if(!columns.get(c).isActive()) {
-	        				continue;
-	        			}	        
-	        			GeneralPath path = gManager.createStraightField(l, values);
-	        			if(path != null) {
-		        			g2D.fill(path);		        				
-	        			}
-	        			addPathToSelected("Fill", path, c);
-	        		}else if(prManager.getStyle().equals("Small Multiples")) {
-	        			GeneralPath path = gManager.createSmallMultiples(l, values, columns.size(),c);
-	        			if(path != null) {
-		        			g2D.fill(path);		        				
-	        			}
-	        			addPathToSelected("Fill", path, c);
-	        		}
-	        	}  
-	        }
-	        else if(prManager.getStyle().equals("Stacked(Baseline)")) {
-	        		int deactivatedItems = prManager.getDeactivatedItems();
-	        		ArrayList<ValueStack> valStack = new ArrayList<>();
-	        		ArrayList<Column> columns = dManager.getColumns();
-		        	for(int c = 0; c < columns.size() -1; c++) {
-		        		Double[] prevVals = {0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D};
-		        		if(c > 0) {
-		        			prevVals = valStack.get(c).values;
-		        			
-		        		}else {
-		        			valStack.add(new ValueStack(prevVals, null, -1));
-		        		}
-		        		
-		        		
-		        		Double[] values = new Double[13];
-		        		for(int m = 0; m < 12; m++) {
-		        			int pos = l*12 + m;
-		        			Double value = columns.get(c).getData()[pos]; 
-		
-		            		if(value == null || !columns.get(c).isActive()) {
-		            			values[m] = 0D + prevVals[m];
-		            		}else {
-		            			values[m] = value + prevVals[m]; 
-		            		}
-		        		}
-		        		int posFirstOfNext = (l+1)*12;	        		
-		        		Double valNext = null;
-		        		if(posFirstOfNext < dManager.getDates().size()) {
-		        			valNext = columns.get(c).getData()[posFirstOfNext];
-		        		}
-		        		if(valNext == null || !columns.get(c).isActive()) {
-		        			values[12] = 0D + prevVals[12];
-		        		}else {
-		        			values[12] = valNext + prevVals[12]; 
-		        		}  	
-		        		
-        				valStack.add(new ValueStack(values, colors[c], c));
-		        		
-	        			
-		        	}
-		        	double max = findBiggestValue(valStack);
-		        	double ratio = 1;
-		        	if(max > dManager.getMax()) {
-		        		ratio = 5;
-		        	}
-		        	for(int vs = 1; vs < valStack.size(); vs++) {
-		        		g2D.setColor(valStack.get(vs).color);
-		        		g2D.setStroke(new BasicStroke(3));
-		        		
-		        		GeneralPath path = gManager.createStreamGraph(l, valStack.get(vs).values, valStack.get(vs - 1).values, ratio, false);
-	        			if(path != null) {
-		        			g2D.fill(path);		        				
-	        			}
-	        			addPathToSelected("Fill", path, vs - 1);
-		        	}
-	        		
-	        } 
-	        else if(prManager.getStyle().equals("Stacked(Centered)")) {
-        		int deactivatedItems = 0;
-        		ArrayList<ValueStack> valStack = new ArrayList<>();
-        		ArrayList<Column> columns = dManager.getColumns();
-        		boolean isEven = false;
-        		int center = columns.size()/2 + 1;
-        		if(columns.size()%2==0) {
-        			isEven = true;
-        			center = columns.size()/2;
-        		}
-        		
-	        	for(int c = 0; c < columns.size() -1; c++) {
-	        		Double[] prevVals = {0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D,0D};
-	        		if(c == 0 || c == center) {
-	        			valStack.add(new ValueStack(prevVals, null, -1));	        			
-	        		}else {
-	        			if(c > center) {
-		        			prevVals = valStack.get(c + 1).values;	        				
-	        			}else if(c < center) {
-		        			prevVals = valStack.get(c).values;	        				
-	        			}
-	        		}
-	        		
-	        		Double[] values = new Double[13];
-	        		for(int m = 0; m < 12; m++) {
-	        			int pos = l*12 + m;
-	        			Double value = columns.get(c).getData()[pos];    
-	
-	            		if(value == null || !columns.get(c).isActive()) {
-		            			values[m] = prevVals[m];
-	            		}else {
-	            			if(c < center) {
-		            			values[m] = value + prevVals[m]; 	            				
-	            			}else if(c >= center) {
-	            				values[m] = prevVals[m] - value; 	   
-	            			}
-	            		}
-	        		}
-	        		int posFirstOfNext = (l+1)*12;	        		
-	        		Double valNext = null;
-	        		if(posFirstOfNext < dManager.getDates().size()) {
-	        			valNext = columns.get(c).getData()[posFirstOfNext];
-	        		}
-	        		if(valNext == null || !columns.get(c).isActive()) {            			
-            				values[12] = prevVals[12];  	
-	        		}else {
-            			if(c < center) {
-            				values[12] = valNext + prevVals[12]; 	            				
-            			}else if(c >= center) {
-            				values[12] = prevVals[12] - valNext;  	   
-            			}
-	        			
-	        		}  	
-	        		
-        			valStack.add(new ValueStack(values, colors[c], c));
-        			
-	        	}
-        		int ratio = 8;
-	        	for(int vs = 1; vs < valStack.size() - 1; vs++) {
-	        		if(vs == center + 1) {
+        for(int l = 0; l<lines.size(); l++) {
+        	boolean isSecond = false;
+	        if(prManager.getStyle().contains("Line")) {
+	        	for(int c = 0; c < columns.size() - 1; c++) {
+	        		if(!columns.get(c).isActive()) {
 	        			continue;
 	        		}
+	                g2D.setColor(columns.get(c).getColor());	     
+	        		int year = Integer.parseInt(dManager.getYears().get(l));
+	            	ArrayList<Data> yearsData = dManager.getYearData(c, year);	        		
+	        		g2D.setStroke(new BasicStroke(2));
 	        		
-	        		if(vs > center + 1) {
-		        		g2D.setColor(valStack.get(vs + 1).color);        				
-        			}else if(vs < center) {
-		        		g2D.setColor(valStack.get(vs).color);           				
+	        		
+	        		GeneralPath path = gManager.createSimpleLineGraph(l, yearsData, isSecond, prManager.getStyle().size());
+        			if(path != null) {
+	        			g2D.draw(path);		        				
         			}
-	        		g2D.setStroke(new BasicStroke(3));
-	        		GeneralPath path = gManager.createStreamGraph(l, valStack.get(vs).values, valStack.get(vs - 1).values, ratio, true);
+        			
+        			if(!isSecond) {
+        				addPathToSecondSelected("Draw", path, c);
+        			}else {
+            			addPathToSelected("Draw", path, c);         				
+        			}     		
+
+	        	}  
+    			isSecond = true;  
+	        }
+	        if(prManager.getStyle().contains("Area")) {
+	        	for(int c = 0; c < columns.size() - 1; c++) {
+	        		if(!columns.get(c).isActive()) {
+	        			continue;
+	        		}
+	                g2D.setColor(columns.get(c).getColor());	     
+	        		int year = Integer.parseInt(dManager.getYears().get(l));
+	            	ArrayList<Data> yearsData = dManager.getYearData(c, year);	        		
+	        		g2D.setStroke(new BasicStroke(2));
+	        		
+	        		        		
+	        		GeneralPath path = gManager.createStraightField(l, yearsData, isSecond, prManager.getStyle().size());
+        			if(path != null) {
+	        			g2D.fill(path);		        				
+        			}
+        			if(!isSecond) {
+        				addPathToSecondSelected("Fill", path, c);
+        			}else {
+            			addPathToSelected("Fill", path, c);         				
+        			}        			
+
+	        	}  
+    			isSecond = true;  
+	        }
+	        if(prManager.getStyle().contains("Small Multiples")) {
+	        	for(int c = 0; c < columns.size() - 1; c++) {
+	        		if(!columns.get(c).isActive()) {
+	        			continue;
+	        		}
+	                g2D.setColor(columns.get(c).getColor());	     
+	        		int year = Integer.parseInt(dManager.getYears().get(l));
+	            	ArrayList<Data> yearsData = dManager.getYearData(c, year);	        		
+	        		g2D.setStroke(new BasicStroke(2));
+	        		
+	        		
+	        		if(prManager.getStyle().contains("Small Multiples")) {		        		
+		        		GeneralPath path = gManager.createSmallMultiples(l, yearsData, columns.size(), c);
+	        			if(path != null) {
+		        			g2D.fill(path);		        				
+	        			}
+
+	        			if(!isSecond) {
+	        				addPathToSecondSelected("Fill", path, c);
+	        			}else {
+	            			addPathToSelected("Fill", path, c);         				
+	        			}   
+        			}
+
+	        	}  
+	        }
+	        if(prManager.getStyle().contains("Braided")) {
+	        	ArrayList<YearData> gapData = new ArrayList<>();
+	        	for(int c = 0; c < columns.size() - 1; c++) {
+	        		if(!columns.get(c).isActive()) {
+	        			continue;
+	        		}     
+	        		int year = Integer.parseInt(dManager.getYears().get(l));
+	            	ArrayList<Data> yearsData = dManager.getYearData(c, year);	
+	            	YearData yData = new YearData(yearsData, columns.get(c).getColor(), c);
+	            	gapData.add(yData);	            	
+	        	}
+	        	
+	        	Collections.sort(gapData, HighestPoint);
+	        	
+	        	for (YearData yearsData : gapData) {
+	                g2D.setColor(yearsData.color);	
+	        		GeneralPath path = gManager.createStraightField(l, yearsData.data, isSecond, prManager.getStyle().size());
         			if(path != null) {
 	        			g2D.fill(path);		        				
         			}
 
-        			addPathToSelected("Fill", path, vs - 1);
-	        	}
-        		
-	        } 
-	        else if(prManager.getStyle().equals("Braided")) {
-        		ArrayList<ValueStack> valStack = new ArrayList<>();
-        		ArrayList<Column> columns = dManager.getColumns();
-	        	for(int c = 0; c < columns.size() -1; c++) {
-        			if(!columns.get(c).isActive()) {
-        				continue;
-        			}	
-	        		
-	        		Double[] values = new Double[13];
-	        		for(int m = 0; m < 12; m++) {
-	        			int pos = l*12 + m;
-	        			Double value = columns.get(c).getData()[pos];    
-	
-	            		if(value == null) {
-	            			values[m] = 0D;
-	            		}else {
-	            			values[m] = value; 
-	            		}
-	        		}
-	        		int posFirstOfNext = (l+1)*12;
-	        		Double valNext = null;
-	        		if(posFirstOfNext < dManager.getDates().size()) {
-	        			valNext = columns.get(c).getData()[posFirstOfNext];
+        			if(!isSecond) {
+        				addPathToSecondSelected("Fill", path, yearsData.column);
+        			}else {
+            			addPathToSelected("Fill", path, yearsData.column);         				
+        			}   
+				}
+    			isSecond = true;
+	        }
+	        if(prManager.getStyle().contains("Stacked(Baseline)")) {// || prManager.getStyle().equals("Stacked(Centered)")
+            	ArrayList<Data> yearsData = null;	   
+            	ArrayList<Data> yearsDataPrev = null;
+            	ArrayList<Column> activeColumns = new ArrayList<DataManager.Column>();
+            	
+            	for(int c = 0; c < columns.size(); c++) {
+	        		if(columns.get(c).isActive()) {
+	        			activeColumns.add(columns.get(c));
 	        		}  
-	        		if(valNext == null) {
-	        			values[12] = 0D;
-	        		}else {
-	        			values[12] = valNext; 
-	        		}
+            	}
+            	
+	        	for(int c = 0; c < activeColumns.size(); c++) {
+	        		int dataIndex = columns.indexOf(activeColumns.get(c));
+	                g2D.setColor(activeColumns.get(c).getColor());               
+	                
+	        		int year = Integer.parseInt(dManager.getYears().get(l));
+	            	if(c== 0) {
+		            	yearsData = dManager.getYearData(dataIndex, year);	   
+		            	yearsDataPrev = null;
+	            	}
+	            	else{
+	            		if(c == 1) {
+	            			yearsData = dManager.getYearData(dataIndex, year);	   
+	            			yearsDataPrev = dManager.getYearData(dataIndex - 1, year);
+	            		}
+	            		            		
+	            		for(int y = 0; y < yearsData.size(); y++) {
+	            			yearsDataPrev.get(y).setData(yearsData.get(y).getData());
+	            		}
+	            		
+	            		ArrayList<Data> yd = dManager.getYearData(dataIndex, year);
+	            		
+	            		for(int y = 0; y < yd.size(); y++) {
+	            			yearsData.get(y).increaseData(yd.get(y).getData());
+	            		}
+	            	}
+	            	
+	        		g2D.setStroke(new BasicStroke(1));
 	        		
-        			valStack.add(new ValueStack(values, colors[c], c));
-	        	}
-	        	Collections.sort(valStack, HighestPoint);
-	        	
-	        	for(int vs = 0; vs < valStack.size(); vs++) {
-	        		g2D.setColor(valStack.get(vs).color);
-	        		g2D.setStroke(new BasicStroke(3));        
 	        		
-	        		GeneralPath path = gManager.createStraightField(l, valStack.get(vs).values);
-	    			if(path != null) {
-	        			g2D.fill(path);		
-	    			}
+	        		GeneralPath path = gManager.createStreamGraph(l, yearsData, yearsDataPrev, 12 * prManager.getStyle().size(), false,isSecond);
+        			if(path != null) {
+	        			g2D.fill(path);		        				
+        			}      	
+        			
+        			if(!isSecond) {
+        				addPathToSecondSelected("Fill", path, dataIndex);
+        			}else {
+            			addPathToSelected("Fill", path, dataIndex);         				
+        			}   
 
-        			addPathToSelected("Fill", path, valStack.get(vs).column);	
-    			}
-	        }	 
+	        	}  	        	
+
+    			isSecond = true;
+	        }
+	        if(prManager.getStyle().contains("Stacked(Centered)")) {// || prManager.getStyle().equals("Stacked(Centered)")
+            	ArrayList<Data> yearsData = null;	   
+            	ArrayList<Data> yearsDataPrev = null;
+            	int threshold = columns.size()/2;
+            	ArrayList<Column> activeColumns = new ArrayList<DataManager.Column>();
+            	
+            	for(int c = 0; c < columns.size(); c++) {
+	        		if(columns.get(c).isActive()) {
+	        			activeColumns.add(columns.get(c));
+	        		}  
+            	}
+            	
+	        	for(int c = 0; c < activeColumns.size(); c++) {
+	        		int dataIndex = columns.indexOf(activeColumns.get(c));
+	        		if(c < threshold) {
+		                g2D.setColor(activeColumns.get(c).getColor());               
+		                
+		        		int year = Integer.parseInt(dManager.getYears().get(l));
+		            	if(c == 0) {
+			            	yearsData = dManager.getYearData(dataIndex, year);	   
+			            	yearsDataPrev = null;
+		            	}
+		            	else { 
+		            		if(c == 1) {   
+		            			yearsDataPrev = dManager.getYearData(dataIndex - 1, year);
+		            		}
+		            	
+		            		for(int y = 0; y < yearsData.size(); y++) {
+		            			yearsDataPrev.get(y).setData(yearsData.get(y).getData());
+		            		}
+		            		
+		            		ArrayList<Data> yd = dManager.getYearData(dataIndex, year);
+		            		
+		            		for(int y = 0; y < yd.size(); y++) {
+		            			yearsData.get(y).increaseData(yd.get(y).getData());
+		            		}
+		            	}
+		            	
+		        		g2D.setStroke(new BasicStroke(2));
+		        		
+		        		
+		        		GeneralPath path = gManager.createStreamGraph(l, yearsData, yearsDataPrev, 12 * prManager.getStyle().size(), true, isSecond);
+	        			if(path != null) {
+		        			g2D.fill(path);		        				
+	        			}
+	        			addPathToSelected("Fill", path, c);
+	        		}else {
+	        			g2D.setColor(activeColumns.get(c).getColor());               
+		                
+		        		int year = Integer.parseInt(dManager.getYears().get(l));
+		            	if(c == threshold) {
+			            	yearsData = dManager.getNegativeYearData(dataIndex, year);	   
+			            	yearsDataPrev = null;
+		            	}
+		            	else {
+		            		if(c == threshold + 1) {   
+				            	yearsDataPrev = dManager.getNegativeYearData(dataIndex - 1, year);
+			            	}
+			            	
+		            		for(int y = 0; y < yearsData.size(); y++) {
+		            			yearsDataPrev.get(y).setData(yearsData.get(y).getData());
+		            		}
+		            		
+		            		ArrayList<Data> yd = dManager.getNegativeYearData(dataIndex, year);
+		            		
+		            		for(int y = 0; y < yd.size(); y++) {
+		            			yearsData.get(y).increaseData(yd.get(y).getData());
+		            		}
+			            	
+	            		}
+		            	
+		        		g2D.setStroke(new BasicStroke(2));
+		        		
+		        		
+		        		GeneralPath path = gManager.createStreamGraph(l, yearsData, yearsDataPrev, 12 * prManager.getStyle().size(), true, isSecond);
+	        			if(path != null) {
+		        			g2D.fill(path);		        				
+	        			}
+
+	        			if(!isSecond) {
+	        				addPathToSecondSelected("Fill", path, dataIndex);
+	        			}else {
+	            			addPathToSelected("Fill", path, dataIndex);         				
+	        			} 
+	        		}
+
+	        	} 
+	        	isSecond = true;
+	        }
+	        
 	        
 	        g2D.setStroke(new BasicStroke(1));
-        	g2D.setColor(Color.RED);
         	if(l< lines.size()-1) {
+        		if(pManager.isInMagnifierView()) {
+		        	g2D.setColor(Color.LIGHT_GRAY);
+		        	ArrayList<Line2D> daylines = pManager.getDaysOfMonths().get(l);
+	
+		        	for(int d = 0; d<daylines.size();d++) {
+		            	g2D.drawLine((int)daylines.get(d).getX1(), (int)daylines.get(d).getY1(), (int)daylines.get(d).getX2(), (int)daylines.get(d).getY2());
+		            }
+	        	}
+	        	
+            	g2D.setColor(Color.RED);
 	        	ArrayList<Line2D> monthLines = pManager.getMonthLines(l);
 	        	for(int m = 0; m<monthLines.size();m++) {
 	            	g2D.drawLine((int)monthLines.get(m).getX1(), (int)monthLines.get(m).getY1(), (int)monthLines.get(m).getX2(), (int)monthLines.get(m).getY2());
 	            }
+	        	
         	}    
             if(selectedCol != null) {
             	for(int i = 0; i < selectedCol.getPath().size(); i++) {
@@ -362,10 +389,29 @@ public class DrawingCanvas extends JPanel {
             			g2D.draw(selectedCol.getPath().get(i));
             		}else if(selectedCol.type == "Fill") {
             	        g2D.setColor(Color.BLACK);
-            	        g2D.setStroke(new BasicStroke(2));
+            	        g2D.setStroke(new BasicStroke(1));
             			g2D.draw(selectedCol.getPath().get(i));
             	        g2D.setColor(new Color(153, 0, 51, 70));
             			g2D.fill(selectedCol.getPath().get(i));
+            		}
+            	}
+            }   
+            if(selectedColSecond != null) {
+            	for(int i = 0; i < selectedColSecond.getPath().size(); i++) {
+        			if(selectedColSecond.getPath().get(i) == null) {
+        				continue;
+        			}
+
+            		if(selectedColSecond.type == "Draw") {
+            	        g2D.setColor(Color.RED);
+            	        g2D.setStroke(new BasicStroke(3));
+            			g2D.draw(selectedColSecond.getPath().get(i));
+            		}else if(selectedColSecond.type == "Fill") {
+            	        g2D.setColor(Color.BLACK);
+            	        g2D.setStroke(new BasicStroke(1));
+            			g2D.draw(selectedColSecond.getPath().get(i));
+            	        g2D.setColor(new Color(153, 0, 51, 70));
+            			g2D.fill(selectedColSecond.getPath().get(i));
             		}
             	}
             }
@@ -394,9 +440,9 @@ public class DrawingCanvas extends JPanel {
 	    	}
     	}
     	
-        g2D.drawRect(infoPanelX + 10, infoPanelY - 20, 100, 20);
+        g2D.drawRect(infoPanelX + 10, infoPanelY - 20, 200, 20);
         g2D.setColor(new Color(255, 255, 204));
-        g2D.fillRect(infoPanelX + 10, infoPanelY - 20, 99, 19);
+        g2D.fillRect(infoPanelX + 10, infoPanelY - 20, 199, 19);
         g2D.setColor(Color.BLACK);
         g2D.drawString(text, infoPanelX + 10, infoPanelY - 3);
        
@@ -425,11 +471,13 @@ public class DrawingCanvas extends JPanel {
 		for(int col = 0; col < dManager.getColumns().size(); col++) {    		
     		if(color.equals(dManager.getColumns().get(col).getColor())) {
     			selectedCol = new SelectedColumn(col);
+    			selectedColSecond = new SelectedColumn(col);
     			repaint();
 				return;
 			}
     	}	
 		selectedCol = null;
+		selectedColSecond = null;
 		repaint();
 	}
 	
@@ -440,10 +488,11 @@ public class DrawingCanvas extends JPanel {
 		if(pManager.getLines().size() != 0) {
 			pManager.getLines().clear();
 			pManager.getMonthsOfYears().clear();
+			pManager.getDaysOfMonths().clear();
 		}
 		
 		for(int i = 0; i < dManager.getYears().size(); i++) {
-			pManager.addLine(new Line2D.Double(TOP_LINE_END + i * gapSize, TOP_LINE_END, TOP_LINE_END + i * gapSize, BOTTOM_LINE_END), (String)columns.get(i).getName());
+			pManager.addLine(new Line2D.Double(TOP_LINE_END + i * gapSize, TOP_LINE_END, TOP_LINE_END + i * gapSize, BOTTOM_LINE_END), dManager.getYears().get(i));
 		}
 	}
 
@@ -473,17 +522,25 @@ public class DrawingCanvas extends JPanel {
     public void reset() {
     	doPositioning();
     	prManager.setZoom(1D);
-    	prManager.setOffsetLeft(0D);
-    	prManager.setOffsetTop(0D);
+    	prManager.setOffsetNormalLeft(0D);
+    	prManager.setOffsetNormalTop(0D);
+    	prManager.setOffsetZoomLeft(0D);
+    	prManager.setOffsetZoomTop(0D);
+    	if(pManager.isInMagnifierView()) {
+    		selectedCol = null;
+    		selectedColSecond = null;
+    		pManager.setInMagnifierView(false);
+    	}
+    	
     	repaint();
     }
     
-    public static Comparator<ValueStack> HighestPoint = new Comparator<ValueStack>() {
+    public static Comparator<YearData> HighestPoint = new Comparator<YearData>() {
 
     	@Override
-		public int compare(ValueStack arg0, ValueStack arg1) {
-			List<Double> arg0L = Arrays.asList(arg0.values);
-			List<Double> arg1L = Arrays.asList(arg1.values);
+		public int compare(YearData arg0, YearData arg1) {
+			List<Data> arg0L = arg0.data;
+			List<Data> arg1L = arg1.data;
 			
 			return (int) (calculateAverage(arg1L) - calculateAverage(arg0L));
 		}
@@ -501,11 +558,11 @@ public class DrawingCanvas extends JPanel {
 		}
 	}
 	
-	private static double calculateAverage(List <Double> marks) {
+	private static double calculateAverage(List <Data> marks) {
 		  Double sum = 0D;
 		  if(!marks.isEmpty()) {
-		    for (Double mark : marks) {
-		        sum += mark;
+		    for (Data mark : marks) {
+		        sum += mark.getData();
 		    }
 		    return sum / marks.size();
 		  }
@@ -527,6 +584,12 @@ public class DrawingCanvas extends JPanel {
 		if(selectedCol != null && selectedCol.getOrdinal() == col) {
 			selectedCol.setType(type);
 			selectedCol.addPath(gp);
+		}
+	}
+	public void addPathToSecondSelected(String type, GeneralPath gp, int col) {
+		if(selectedColSecond != null && selectedColSecond.getOrdinal() == col) {
+			selectedColSecond.setType(type);
+			selectedColSecond.addPath(gp);
 		}
 	}
 	
@@ -573,11 +636,65 @@ public class DrawingCanvas extends JPanel {
 	
 	public void flushSelected() {
 		selectedCol = null;
+		selectedColSecond = null;
 	}
 
 	public void flushPaths() {
 		if(selectedCol != null) {
 			selectedCol.cleanPaths();
+		}
+	}
+	
+	public void magnifier(Double xDiff, Double yDiff) {	
+		if(pManager.isInMagnifierView()) {
+			return;
+		}
+		Double yGap = (double)Math.abs(yDiff.intValue()) / 10D;
+		Double xGap = (double)Math.abs(xDiff.intValue()) / 10D;
+
+		  
+		ActionListener action = new ActionListener() {
+			int i = 0;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+				
+	  			  if(xDiff < 0) {
+	  				  prManager.setOffsetNormalLeft(prManager.getOffsetNormalLeft() - xGap * 3);   
+	  			  }else {
+	  				  prManager.setOffsetNormalLeft(prManager.getOffsetNormalLeft() + xGap * 3); 
+	  			  }
+	  			  
+	  			  repaint();
+	              if(i == 10) {
+	            	((Timer)e.getSource()).stop();
+	              }
+	              i++;
+	            	
+	            }
+            	
+        };
+        Timer t = new Timer(50, action);
+        t.setRepeats(true);
+        t.setInitialDelay(0);
+        t.start();
+
+    	pManager.magnifierView();
+    	pManager.setInMagnifierView(!pManager.isInMagnifierView());
+
+		flushSelected();
+		repaint();
+        
+	}
+	
+	private class YearData{
+		public ArrayList<Data> data;
+		public Color color;
+		public int column;
+		
+		public YearData(ArrayList<Data> data, Color color, int column) {
+			this.data = data;
+			this.color = color;
+			this.column = column;
 		}
 	}
 	
