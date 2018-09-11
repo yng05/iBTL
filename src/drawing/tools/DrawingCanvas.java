@@ -423,20 +423,47 @@ public class DrawingCanvas extends JPanel {
         }  
     	g2D.setStroke(new BasicStroke(1));
 
-    	if(!prManager.getStyle().equals("Small Multiples") && !prManager.getStyle().equals("Stacked(Baseline)") && !prManager.getStyle().equals("Stacked(Centered)")) {
-	    	int valueRangeX = (int)lines.get(0).getX1() - 30;
-	    	int valueRangeY = (int)lines.get(0).getY2();
-	    	
-	    	double rangeStep = (dManager.getMax() - dManager.getMin()) / 9;
-	    	double lineStep = ((int)lines.get(0).getY1() - (int)lines.get(0).getY2())/9;
-            
-	    	for(int rng = 0; rng < 10; rng++) {
-	    		int stepLine = (int) (valueRangeY + rng*lineStep);
-    	        g2D.setColor(Color.BLACK);
-	    		g2D.drawString(String.valueOf((int)(dManager.getMin() + rng*rangeStep)), valueRangeX, stepLine);
-
-    	        g2D.setColor(new Color(0, 0, 0, 50));
-	    		g2D.drawLine((int)lines.get(0).getX1(), stepLine - 5, (int)lines.get(lines.size()-1).getX1(), stepLine - 5);
+    	if(prManager.getStyle().contains("Line") || prManager.getStyle().contains("Area") || prManager.getStyle().contains("Braided")) {
+    		if(prManager.getStyle().size() == 1) {
+		    	int valueRangeX = (int)lines.get(0).getX1() - 30;
+		    	int valueRangeY = (int)lines.get(0).getY2();
+		    	
+		    	double rangeStep = (dManager.getMax() - dManager.getMin()) / 9;
+		    	double lineStep = ((int)lines.get(0).getY1() - (int)lines.get(0).getY2())/9;
+	            
+		    	for(int rng = 0; rng < 10; rng++) {
+		    		int stepLine = (int) (valueRangeY + rng*lineStep);
+	    	        g2D.setColor(Color.BLACK);
+		    		g2D.drawString(String.valueOf((int)(dManager.getMin() + rng*rangeStep)), valueRangeX, stepLine);
+	
+	    	        g2D.setColor(new Color(0, 0, 0, 50));
+		    		g2D.drawLine((int)lines.get(0).getX1(), stepLine - 5, (int)lines.get(lines.size()-1).getX1(), stepLine - 5);
+		    	}
+	    	}else {
+    			int valueRangeX = (int)lines.get(0).getX1() - 30;
+		    	int valueRangeY = ((int)lines.get(0).getY2() - (int)lines.get(0).getY1())  / 2;
+		    	double rangeStep = (dManager.getMax() - dManager.getMin()) / 18;
+		    	double lineStep = ((int)lines.get(0).getY1() - (int)lines.get(0).getY2())/18;
+	    		for(int s = 0; s<=prManager.getStyle().size() - 1; s++) {
+	    			if(!prManager.getStyle().get(s).equals("Line") && !prManager.getStyle().get(s).equals("Area") && !prManager.getStyle().get(s).equals("Braided")) {
+	    				continue;
+	    			}
+	    			
+			    	int bottom = valueRangeY * (2 - s) + (int)lines.get(0).getY1();
+			    	
+			    	int limit = 10;
+			    	if(s == 0) {
+			    		limit = 9;
+			    	}
+			    	for(int rng = 0; rng < limit; rng++) {
+			    		int stepLine = (int) (bottom + rng*lineStep);
+		    	        g2D.setColor(Color.BLACK);
+			    		g2D.drawString(String.valueOf((int)(dManager.getMin() + rng*rangeStep)), valueRangeX, stepLine);
+		
+		    	        g2D.setColor(new Color(0, 0, 0, 50));
+			    		g2D.drawLine((int)lines.get(0).getX1(), stepLine - 5, (int)lines.get(lines.size()-1).getX1(), stepLine - 5);
+			    	}
+	    		}
 	    	}
     	}
     	
